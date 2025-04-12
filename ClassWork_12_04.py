@@ -1,5 +1,6 @@
 import unittest
-;Реализовать merge sort написать к функции unit-тесты 
+# Реализовать merge sort написать к функции unit-тесты 
+
 
 def merge(left, right):
     result = []
