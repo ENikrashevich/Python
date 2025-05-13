@@ -1,0 +1,100 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import TextBox, Button
+
+class MandelbrotSet:
+    def __init__(self):
+        self.fig, self.ax = plt.subplots(figsize=(10, 10))
+        plt.subplots_adjust(bottom=0.3)
+        
+        # Параметры по умолчанию
+        self.z0 = complex(0, 0)
+        self.a = 2.0
+        self.R = 2.0
+        self.N = 100
+        self.resolution = 500  # Разрешение изображения
+        self.x_center = 0.0
+        self.y_center = 0.0
+        self.zoom = 1.0
+        
+        # Создание элементов управления
+        self.ax_z0_real = plt.axes([0.15, 0.25, 0.1, 0.05])
+        self.ax_z0_imag = plt.axes([0.15, 0.18, 0.1, 0.05])
+        self.ax_a = plt.axes([0.35, 0.25, 0.1, 0.05])
+        self.ax_R = plt.axes([0.35, 0.18, 0.1, 0.05])
+        self.ax_N = plt.axes([0.55, 0.25, 0.1, 0.05])
+        self.ax_zoom = plt.axes([0.55, 0.18, 0.1, 0.05])
+        
+        self.text_z0_real = TextBox(self.ax_z0_real, 'z0.real', initial=str(self.z0.real))
+        self.text_z0_imag = TextBox(self.ax_z0_imag, 'z0.imag', initial=str(self.z0.imag))
+        self.text_a = TextBox(self.ax_a, 'a', initial=str(self.a))
+        self.text_R = TextBox(self.ax_R, 'R', initial=str(self.R))
+        self.text_N = TextBox(self.ax_N, 'N', initial=str(self.N))
+        self.text_zoom = TextBox(self.ax_zoom, 'Zoom', initial=str(self.zoom))
+        
+        self.btn_update = Button(plt.axes([0.75, 0.18, 0.1, 0.07]), 'Update')
+        self.btn_save = Button(plt.axes([0.75, 0.25, 0.1, 0.07]), 'Save')
+        
+        # Привязка событий
+        self.btn_update.on_clicked(self.update)
+        self.btn_save.on_clicked(self.save)
+        self.fig.canvas.mpl_connect('button_press_event', self.on_click)
+        
+        self.update(None)
+        plt.show()
+    
+    def compute_mandelbrot(self):
+        x_min = self.x_center - self.a / self.zoom
+        x_max = self.x_center + self.a / self.zoom
+        y_min = self.y_center - self.a / self.zoom
+        y_max = self.y_center + self.a / self.zoom
+        
+        x = np.linspace(x_min, x_max, self.resolution)
+        y = np.linspace(y_min, y_max, self.resolution)
+        c = x[:, np.newaxis] + 1j * y[np.newaxis, :]
+        
+        z = np.full(c.shape, self.z0)
+        divergence_step = np.zeros(c.shape, dtype=int)
+        
+        for step in range(self.N):
+            mask = np.abs(z) < self.R
+            z[mask] = z[mask] ** 5 + c[mask]
+            divergence_step[mask & (np.abs(z) >= self.R)] = step
+        
+        divergence_step[divergence_step == 0] = self.N
+        return divergence_step
+    
+    def update(self, event):
+        try:
+            self.z0 = complex(float(self.text_z0_real.text), float(self.text_z0_imag.text))
+            self.a = float(self.text_a.text)
+            self.R = float(self.text_R.text)
+            self.N = int(self.text_N.text)
+            self.zoom = max(0.1, float(self.text_zoom.text))
+        except ValueError:
+            print("Ошибка ввода параметров")
+            return
+        
+        divergence = self.compute_mandelbrot()
+        self.ax.clear()
+        self.ax.imshow(divergence.T, cmap='inferno', origin='lower', 
+                      extent=(self.x_center - self.a/self.zoom, self.x_center + self.a/self.zoom,
+                              self.y_center - self.a/self.zoom, self.y_center + self.a/self.zoom))
+        self.ax.set_xlabel('Re(c)')
+        self.ax.set_ylabel('Im(c)')
+        self.fig.canvas.draw()
+    
+    def save(self, event):
+        filename = f"Mandelbrot_z0_{self.z0.real}_{self.z0.imag}_a_{self.a}_R_{self.R}_N_{self.N}.jpeg"
+        self.fig.savefig(filename, dpi=300)
+        print(f"Изображение сохранено как {filename}")
+    
+    def on_click(self, event):
+        if event.inaxes != self.ax:
+            return
+        self.x_center = event.xdata
+        self.y_center = event.ydata
+        self.update(None)
+
+if __name__ == "__main__":
+    MandelbrotSet()
