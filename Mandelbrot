@@ -12,7 +12,7 @@ class MandelbrotSet:
         self.a = 2.0
         self.R = 2.0
         self.N = 100
-        self.resolution = 500  # Разрешение изображения
+        self.resolution = 400  # Разрешение изображения
         self.x_center = 0.0
         self.y_center = 0.0
         self.zoom = 1.0
@@ -74,12 +74,15 @@ class MandelbrotSet:
         except ValueError:
             print("Ошибка ввода параметров")
             return
-        
+    
         divergence = self.compute_mandelbrot()
         self.ax.clear()
-        self.ax.imshow(divergence.T, cmap='inferno', origin='lower', 
-                      extent=(self.x_center - self.a/self.zoom, self.x_center + self.a/self.zoom,
-                              self.y_center - self.a/self.zoom, self.y_center + self.a/self.zoom))
+        cmap = plt.cm.get_cmap('inferno').copy()
+        cmap.set_under('black')  # Черный цвет для точек внутри круга
+        self.ax.imshow(divergence.T, cmap=cmap, origin='lower', 
+                    extent=(self.x_center - self.a/self.zoom, self.x_center + self.a/self.zoom,
+                            self.y_center - self.a/self.zoom, self.y_center + self.a/self.zoom),
+                    vmin=0, vmax=self.N)
         self.ax.set_xlabel('Re(c)')
         self.ax.set_ylabel('Im(c)')
         self.fig.canvas.draw()
